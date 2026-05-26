@@ -1,7 +1,4 @@
 bin/
-results/
-*.o
-*.png
-*.csv
 __pycache__/
 .DS_Store
+*.o
