@@ -1,0 +1,3 @@
+/home/m.erchenko/parallels/sine_sum/build_double/CMakeFiles/sine_sum.dir
+/home/m.erchenko/parallels/sine_sum/build_double/CMakeFiles/edit_cache.dir
+/home/m.erchenko/parallels/sine_sum/build_double/CMakeFiles/rebuild_cache.dir

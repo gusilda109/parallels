@@ -15,4 +15,3 @@ else()
     message(STATUS ">>> Building with FLOAT precision (default)")
 endif()
 
-target_compile_options(sine_sum PRIVATE -O3)

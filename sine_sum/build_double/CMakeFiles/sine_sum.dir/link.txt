@@ -1,0 +1,1 @@
+/usr/bin/g++ CMakeFiles/sine_sum.dir/src/main.cpp.o -o sine_sum 
