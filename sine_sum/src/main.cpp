@@ -8,7 +8,7 @@ using real_t = double;
 using real_t = float;
 #endif
 
-const size_t N = 10000000;
+const size_t N = pow(2, 24);
 
 int main() {
     std::vector<real_t> data(N);

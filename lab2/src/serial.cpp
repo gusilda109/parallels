@@ -13,7 +13,7 @@
 
 int main(int argc, char** argv) {
     int N = (argc > 1) ? std::atoi(argv[1]) : 15000;
-    const double tau = 0.0001;       // параметр метода; знак подобран
+    const double tau = 1e-5;       // параметр метода; знак подобран
     const double eps = 1e-5;
     const int    max_iter = 100000;
 

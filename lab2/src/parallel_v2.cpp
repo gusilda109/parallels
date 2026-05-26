@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
     const char* sch = (argc > 2) ? argv[2] : "static";
     int chunk = (argc > 3) ? std::atoi(argv[3]) : 0;
 
-    const double tau = 0.0001;
+    const double tau = 1e-5;
     const double eps = 1e-5;
     const int    max_iter = 100000;
 
