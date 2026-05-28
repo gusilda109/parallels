@@ -1,0 +1,10 @@
+build/
+*.o
+matvec
+client_server
+verify
+results*.csv
+results_*.txt
+speedup.pdf
+speedup.png
+__pycache__/
