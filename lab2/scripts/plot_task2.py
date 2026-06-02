@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""scripts/plot_task2.py — график ускорения для Задания 2.
-
-Читает results/task2.csv (формат: threads,nsteps,time_s) и строит график:
-ускорение S(p) = T(1)/T(p) в зависимости от числа потоков.
-Сохраняет в results/task2_speedup.png.
-"""
+"""scripts/plot_task2.py — график ускорения для Задания 2."""
 import csv
 from pathlib import Path
 import matplotlib
@@ -21,19 +16,31 @@ with CSV.open() as f:
 rows.sort()
 T1 = next(t for p, t in rows if p == 1)
 
-fig, ax = plt.subplots(figsize=(7, 5))
+fig, ax = plt.subplots(figsize=(8, 5.5))
 max_p = max(p for p, _ in rows)
-ax.plot([1, max_p], [1, max_p], ls="--", color="gray", label="Linear")
+ax.plot([1, max_p], [1, max_p], ls="--", color="gray",
+        alpha=0.7, label="Идеальное (линейное)")
 
 xs = [p for p, _ in rows]
 ys = [T1 / t for _, t in rows]
-ax.plot(xs, ys, marker="o", color="C1", label="integrate_omp")
+color = "tab:orange"
+ax.plot(xs, ys, marker="o", color=color, label="integrate_omp")
+
+# Подсветка максимума
+imax = ys.index(max(ys))
+ax.scatter([xs[imax]], [ys[imax]], s=200, facecolor="none",
+           edgecolor=color, linewidth=2.5, zorder=5)
+ax.annotate(f"max: p={xs[imax]}, S={ys[imax]:.1f}×",
+            xy=(xs[imax], ys[imax]), xytext=(8, -22),
+            textcoords="offset points", fontsize=9, color=color,
+            arrowprops=dict(arrowstyle="->", color=color, lw=1))
 
 ax.set_xlabel("Число потоков p")
-ax.set_ylabel("Ускорение S(p)")
-ax.set_title("Задание 2: ускорение численного интегрирования")
-ax.grid(True, ls=":")
-ax.legend()
+ax.set_ylabel("Ускорение S(p) = T(1)/T(p)")
+ax.set_title("Задание 2. Ускорение численного интегрирования\n(круг — точка максимального ускорения)")
+ax.set_xticks([1,2,4,7,8,16,20,40])
+ax.grid(True, ls=":", alpha=0.6)
+ax.legend(loc="upper left")
 fig.tight_layout()
 out = ROOT / "results" / "task2_speedup.png"
 fig.savefig(out, dpi=140)

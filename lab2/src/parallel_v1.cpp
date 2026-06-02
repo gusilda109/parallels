@@ -20,8 +20,6 @@ int main(int argc, char** argv) {
     std::vector<double> A(static_cast<size_t>(N) * N);
     std::vector<double> b(N), x(N, 0.0), y(N);
 
-    // Параллельная инициализация (важно для NUMA: страницы попадают
-    // в локальную для потока память — first-touch policy).
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < N; ++i) {
         for (int j = 0; j < N; ++j) A[(size_t)i * N + j] = (i == j) ? 2.0 : 1.0;

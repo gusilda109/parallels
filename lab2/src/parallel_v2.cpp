@@ -120,27 +120,22 @@ int main(int argc, char** argv) {
                 }
             }
 
-            // Аккумулируем частичные суммы потоков
             #pragma omp atomic
             y_norm_sq_shared += local_sum;
 
             #pragma omp barrier  // дождаться всех редукций
 
-            // Один поток проверяет критерий, при необходимости поднимает флаг
             #pragma omp single
             {
                 rel_res = std::sqrt(y_norm_sq_shared) / b_norm;
                 if (rel_res < eps || iter >= max_iter) done = true;
                 ++iter;
             }
-            // неявный барьер после single
 
             if (done) break;
 
-            // x -= tau * y
             #pragma omp for schedule(static)
             for (int i = 0; i < N; ++i) x[i] -= tau * y[i];
-            // неявный барьер — x синхронизирован к началу следующего шага
         }
     }
 

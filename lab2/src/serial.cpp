@@ -1,9 +1,4 @@
-// serial.cpp — последовательная реализация метода простой итерации
-// Решает Ax = b, где a_ii = 2.0, a_ij = 1.0 (i != j), b_i = N + 1.
-// Точное решение: x_i = 1.0.
-//
-// Сборка: g++ -O2 -std=c++17 -o serial serial.cpp
-// Запуск: ./serial <N>
+
 
 #include <cstdio>
 #include <cstdlib>
