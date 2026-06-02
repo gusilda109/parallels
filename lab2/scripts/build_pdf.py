@@ -1,15 +1,5 @@
 #!/usr/bin/env python3
-"""scripts/build_pdf.py — собирает все PNG из results/ в один PDF.
-
-Использует matplotlib (без сторонних зависимостей) — PdfPages кладёт
-каждую картинку на свою страницу A4.
-
-Запуск:
-    python3 scripts/build_pdf.py
-    python3 scripts/build_pdf.py custom_name.pdf
-
-По умолчанию пишет в results/report.pdf.
-"""
+"""scripts/build_pdf.py — собирает все PNG из results/ в один PDF."""
 import sys
 from pathlib import Path
 import matplotlib
@@ -22,13 +12,15 @@ ROOT = Path(__file__).resolve().parents[1]
 RES  = ROOT / "results"
 OUT  = ROOT / "results" / (sys.argv[1] if len(sys.argv) > 1 else "report.pdf")
 
-# Порядок: Задание 1, Задание 2, Задание 3 — с подписями для страниц.
 PAGES = [
-    ("task1_speedup.png",  "Задание 1. Параллельное умножение матрицы на вектор"),
-    ("task2_speedup.png",  "Задание 2. Параллельное численное интегрирование"),
+    ("task1_speedup.png",  "Задание 1. Ускорение умножения матрицы на вектор"),
+    ("task1_profit.png",   "Задание 1. Эффективная производительность P_eff = S²/p"),
+    ("task2_speedup.png",  "Задание 2. Ускорение численного интегрирования"),
+    ("task2_profit.png",   "Задание 2. Эффективная производительность P_eff = S²/p"),
     ("time.png",           "Задание 3. Время работы (метод простой итерации)"),
     ("speedup.png",        "Задание 3. Ускорение"),
     ("efficiency.png",     "Задание 3. Эффективность"),
+    ("task3_profit.png",   "Задание 3. Эффективная производительность P_eff = S²/p"),
 ]
 
 found = [(RES / fn, title) for fn, title in PAGES if (RES / fn).exists()]
@@ -43,7 +35,6 @@ if not found:
 with PdfPages(OUT) as pdf:
     for path, title in found:
         img = imread(path)
-        # A4 в дюймах: 8.27 × 11.69
         fig, ax = plt.subplots(figsize=(8.27, 11.69))
         ax.imshow(img)
         ax.set_axis_off()
