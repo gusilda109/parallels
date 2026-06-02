@@ -1,87 +1,55 @@
 #!/usr/bin/env python3
-"""Построение графика ускорения S_p(p) для Task 1.
-
-Читает results.csv (формат: N,threads,time_seconds), считает ускорение
-S_p = T_1 / T_p для каждого размера матрицы и строит график вместе с
-линией идеального (линейного) ускорения.
-
-Usage:
-    python3 plot_speedup.py results.csv [results_pin.csv]
-Выход: speedup.pdf и speedup.png
-"""
-
-import sys
-import csv
+import sys, csv
 from collections import defaultdict
-
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-
+import matplotlib.ticker as ticker
 
 def read_results(path):
-    """Возвращает dict: {N: {threads: time}}."""
     data = defaultdict(dict)
     with open(path, newline="") as f:
         reader = csv.reader(f)
-        header = next(reader, None)
+        next(reader, None)
         for row in reader:
-            if len(row) < 3:
-                continue
-            n = int(row[0])
-            p = int(row[1])
-            t = float(row[2])
+            if len(row) < 3: continue
+            n, p, t = int(row[0]), int(row[1]), float(row[2])
             data[n][p] = t
     return data
 
-
-def speedup(times):
-    """times: {threads: time} -> (xs, ys) c S_p = T_1/T_p."""
-    if 1 not in times:
-        base_p = min(times)
-        t1 = times[base_p] * base_p  # грубая оценка, если нет T_1
-    else:
-        t1 = times[1]
-    xs = sorted(times)
-    ys = [t1 / times[p] for p in xs]
-    return xs, ys
-
-
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: plot_speedup.py results.csv [results_pin.csv]")
-        sys.exit(1)
+    csv_path = sys.argv[1] if len(sys.argv) > 1 else "results.csv"
+    data = read_results(csv_path)
+    sizes = sorted(data.keys())
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(10, 7))
 
-    colors = {20000: "tab:red", 40000: "tab:orange"}
+    colors_list = ["tab:blue", "tab:orange"]
     max_p = 1
+    for i, n in enumerate(sizes):
+        t1 = data[n][1]
+        xs = sorted(data[n])
+        ys = [t1 / data[n][p] for p in xs]
+        max_p = max(max_p, max(xs))
+        ax.plot(xs, ys, "-o", color=colors_list[i],
+                label=f"M = N = {n}", linewidth=2, markersize=6)
 
-    for arg_i, path in enumerate(sys.argv[1:]):
-        data = read_results(path)
-        suffix = "" if arg_i == 0 else " (pinned)"
-        style = "-o" if arg_i == 0 else "--s"
-        for n, times in sorted(data.items()):
-            xs, ys = speedup(times)
-            max_p = max(max_p, max(xs))
-            ax.plot(xs, ys, style, color=colors.get(n, None),
-                    label=f"M = N = {n}{suffix}")
-
-    # Линия идеального ускорения.
     ideal = list(range(1, max_p + 1))
-    ax.plot(ideal, ideal, "b--", alpha=0.6, label="Linear (ideal)")
+    ax.plot(ideal, ideal, "--", color="gray", linewidth=1.5, label="Линейное")
 
-    ax.set_xlabel("p (число потоков)")
-    ax.set_ylabel("$S_p$ (ускорение)")
-    ax.set_title("Ускорение умножения матрицы на вектор")
-    ax.grid(True, alpha=0.3)
-    ax.legend()
+    ax.set_xlabel("Число потоков р", fontsize=13)
+    ax.set_ylabel("Ускорение S(p)", fontsize=13)
+    ax.set_title("Ускорение распараллеливания", fontsize=14)
+    ax.legend(fontsize=11)
+    ax.grid(True, alpha=0.4, linestyle="--")
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(5))
+    ax.set_xlim(left=0)
+    ax.set_ylim(bottom=0)
 
     fig.tight_layout()
     fig.savefig("speedup.pdf")
     fig.savefig("speedup.png", dpi=150)
     print("Saved speedup.pdf and speedup.png")
-
 
 if __name__ == "__main__":
     main()
