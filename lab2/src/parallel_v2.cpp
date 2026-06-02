@@ -1,9 +1,4 @@
-// parallel_v2.cpp — Вариант 2: одна #pragma omp parallel на весь алгоритм.
-// Команда потоков создаётся один раз; синхронизация — через #pragma omp for
-// (с неявным барьером) и #pragma omp single для скалярных операций.
-//
-// Сборка: g++ -O2 -std=c++17 -fopenmp -o parallel_v2 parallel_v2.cpp
-// Запуск: OMP_NUM_THREADS=8 ./parallel_v2 <N> [schedule_kind] [chunk]
+
 
 #include <cstdio>
 #include <cstdlib>
@@ -47,21 +42,16 @@ int main(int argc, char** argv) {
 
     auto t0 = std::chrono::high_resolution_clock::now();
 
-    // ОДНА параллельная секция на весь алгоритм
+
     #pragma omp parallel
     {
         #pragma omp single
         nthreads = omp_get_num_threads();
 
         while (!done) {
-            // Сброс общей суммы делает один поток
             #pragma omp single
             y_norm_sq_shared = 0.0;
-            // неявный барьер после single — все увидят 0.0
 
-            // y = A*x - b и редукция в y_norm_sq_shared.
-            // Используем reduction на #pragma omp for — поддерживается стандартом
-            // и не требует выхода из parallel-региона.
             double local_sum = 0.0;
 
             if (std::strcmp(sch, "dynamic") == 0) {

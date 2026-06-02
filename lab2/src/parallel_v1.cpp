@@ -1,11 +1,4 @@
-// parallel_v1.cpp — Вариант 1: на каждый распараллеливаемый цикл своя секция
-// #pragma omp parallel for. Накладные расходы на создание/завершение
-// команды потоков платятся на каждой итерации внешнего цикла.
-//
-// Сборка: g++ -O2 -std=c++17 -fopenmp -o parallel_v1 parallel_v1.cpp
-// Запуск: OMP_NUM_THREADS=8 ./parallel_v1 <N> [schedule_kind] [chunk]
-//   schedule_kind: static|dynamic|guided|auto  (по умолчанию static)
-//   chunk:         целое (по умолчанию 0 => без указания chunk)
+
 
 #include <cstdio>
 #include <cstdlib>
@@ -56,7 +49,6 @@ int main(int argc, char** argv) {
     for (; iter < max_iter; ++iter) {
         double y_norm_sq = 0.0;
 
-        // y = A*x - b и одновременно ||y||^2
         if (std::strcmp(sch, "dynamic") == 0) {
             if (chunk > 0) {
                 #pragma omp parallel for reduction(+:y_norm_sq) schedule(dynamic, chunk == 0 ? 1 : chunk)
@@ -126,7 +118,6 @@ int main(int argc, char** argv) {
         rel_res = std::sqrt(y_norm_sq) / b_norm;
         if (rel_res < eps) break;
 
-        // x -= tau * y — отдельная параллельная секция
         #pragma omp parallel for schedule(static)
         for (int i = 0; i < N; ++i) x[i] -= tau * y[i];
     }
