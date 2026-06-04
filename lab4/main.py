@@ -1,16 +1,3 @@
-#!/usr/bin/env python3
-"""
-Многопоточное чтение датчиков (USB-камера + SensorX) и отображение в окне.
-
-- Каждый датчик читается в отдельном потоке постоянно (берём самые свежие данные).
-- Обмен между потоками — через очереди (queue), хранится только последнее значение.
-- В главном потоке с частотой отображения собираем кадр и рисуем поверх значения датчиков.
-- Ресурсы (камера, окно) освобождаются по идиоме RAII (инициализация в __init__,
-  освобождение в __del__).
-- Ошибки логируются в папку log/ (модуль logging).
-- Выход по клавише 'q'.
-"""
-
 import argparse
 import logging
 import os
@@ -23,11 +10,7 @@ import cv2
 import numpy as np
 
 
-# --------------------------------------------------------------------------- #
-#  Логирование
-# --------------------------------------------------------------------------- #
 def setup_logging() -> logging.Logger:
-    """Настраивает логирование в файл log/app.log в текущем проекте."""
     project_dir = os.path.dirname(os.path.abspath(__file__))
     log_dir = os.path.join(project_dir, "log")
     os.makedirs(log_dir, exist_ok=True)
@@ -44,7 +27,6 @@ def setup_logging() -> logging.Logger:
     file_handler.setFormatter(fmt)
     logger.addHandler(file_handler)
 
-    # дублируем ошибки в консоль, чтобы их было видно сразу
     console = logging.StreamHandler(sys.stderr)
     console.setLevel(logging.WARNING)
     console.setFormatter(fmt)
@@ -53,16 +35,12 @@ def setup_logging() -> logging.Logger:
     return logger
 
 
-# --------------------------------------------------------------------------- #
-#  Датчики
-# --------------------------------------------------------------------------- #
 class Sensor:
     def get(self):
         raise NotImplementedError("Subclasses must implement method get()")
 
 
 class SensorX(Sensor):
-    """Sensor X — имитация датчика, тикающего с заданной задержкой."""
 
     def __init__(self, delay: float):
         self._delay = delay
@@ -75,14 +53,10 @@ class SensorX(Sensor):
 
 
 class SensorCam(Sensor):
-    """
-    Датчик USB-камеры. RAII: открытие в __init__, release() в __del__.
-    """
 
     def __init__(self, cam_name, resolution):
         self._log = logging.getLogger("sensors")
-        self._cap = None  # задаём заранее, чтобы __del__ не падал при ошибке init
-        # имя камеры может быть индексом ("0") или путём ("/dev/video0")
+        self._cap = None
         self._src = int(cam_name) if str(cam_name).isdigit() else cam_name
         self._width, self._height = resolution
 
@@ -108,7 +82,6 @@ class SensorCam(Sensor):
         return self._cap.read()
 
     def _reconnect(self) -> bool:
-        """Пытается переоткрыть камеру (например, если её выдернули и вставили)."""
         for attempt in range(3):
             if self._cap is not None:
                 self._cap.release()
@@ -143,9 +116,6 @@ class SensorCam(Sensor):
             logging.getLogger("sensors").info("Камера освобождена")
 
 
-# --------------------------------------------------------------------------- #
-#  Поток-обёртка над датчиком (читает постоянно, отдаёт последнее значение)
-# --------------------------------------------------------------------------- #
 class SensorThread:
     def __init__(self, sensor: Sensor, name: str,
                  stop_event: threading.Event, critical: bool = False):
@@ -170,7 +140,6 @@ class SensorThread:
                     self._log.error("Критический датчик отказал — завершаем работу")
                     self._stop.set()
                 break
-            # храним только самое свежее значение
             try:
                 self._q.get_nowait()
             except queue.Empty:
@@ -181,7 +150,6 @@ class SensorThread:
                 pass
 
     def get(self, default=None):
-        """Свежее значение или default, если нового нет."""
         try:
             return self._q.get_nowait()
         except queue.Empty:
@@ -192,9 +160,6 @@ class SensorThread:
             self._thread.join(timeout=timeout)
 
 
-# --------------------------------------------------------------------------- #
-#  Окно отображения (RAII)
-# --------------------------------------------------------------------------- #
 class WindowImage:
     def __init__(self, freq: float):
         self._log = logging.getLogger("sensors")
@@ -225,11 +190,7 @@ class WindowImage:
             pass
 
 
-# --------------------------------------------------------------------------- #
-#  Отрисовка значений датчиков поверх кадра
-# --------------------------------------------------------------------------- #
 def draw_overlay(frame, values):
-    """values: список кортежей (label, value). Рисует в правом нижнем углу."""
     h, w = frame.shape[:2]
     lines = [f"{label}: {val}" for label, val in values]
 
@@ -253,9 +214,6 @@ def draw_overlay(frame, values):
     return frame
 
 
-# --------------------------------------------------------------------------- #
-#  Аргументы командной строки
-# --------------------------------------------------------------------------- #
 def parse_resolution(s: str):
     try:
         w, h = s.lower().split("x")
@@ -277,9 +235,6 @@ def parse_args():
     return p.parse_args()
 
 
-# --------------------------------------------------------------------------- #
-#  main
-# --------------------------------------------------------------------------- #
 def main() -> int:
     args = parse_args()
     log = setup_logging()
@@ -294,7 +249,6 @@ def main() -> int:
 
     stop_event = threading.Event()
 
-    # --- камера (RAII) ---
     try:
         cam = SensorCam(args.camera, resolution)
     except Exception as e:  # noqa: BLE001
@@ -302,7 +256,6 @@ def main() -> int:
         print(f"Ошибка: {e}", file=sys.stderr)
         return 1
 
-    # --- датчики 100 Hz, 10 Hz, 1 Hz ---
     sensors = [
         SensorThread(SensorX(0.01), "Sensor0", stop_event),
         SensorThread(SensorX(0.1), "Sensor1", stop_event),
@@ -310,7 +263,6 @@ def main() -> int:
     ]
     cam_thread = SensorThread(cam, "Camera", stop_event, critical=True)
 
-    # --- окно (RAII) ---
     try:
         window = WindowImage(args.freq)
     except Exception as e:  # noqa: BLE001
@@ -328,7 +280,6 @@ def main() -> int:
 
     try:
         while not stop_event.is_set():
-            # самые свежие данные; если новых нет — оставляем предыдущие
             frame = cam_thread.get(default=None)
             if frame is not None:
                 last_frame = frame
@@ -349,7 +300,7 @@ def main() -> int:
                                 ("Sensor2", last_vals[2])])
             try:
                 window.show(disp)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 break
 
             if (cv2.waitKey(window.delay_ms) & 0xFF) == ord("q"):
@@ -358,14 +309,13 @@ def main() -> int:
     except KeyboardInterrupt:
         log.info("Прервано пользователем")
     finally:
-        # корректное завершение и освобождение ресурсов (RAII)
         stop_event.set()
         for s in sensors:
             s.join()
         cam_thread.join()
-        del window      # __del__ -> destroyWindow
-        del cam_thread  # отпускаем ссылку на камеру из потока
-        del cam         # __del__ -> cap.release()
+        del window
+        del cam_thread
+        del cam
         cv2.destroyAllWindows()
         log.info("Приложение остановлено")
 
