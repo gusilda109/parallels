@@ -19,14 +19,10 @@ namespace {
 
 
 void pin_thread_to_core(std::size_t core_id) {
-#if defined(__linux__)
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     CPU_SET(core_id, &cpuset);
     pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
-#else
-    (void)core_id;
-#endif
 }
 
 
