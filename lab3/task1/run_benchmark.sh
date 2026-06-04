@@ -17,7 +17,7 @@ OUT="results${PIN_ARG:+_pin}.csv"
 
 THREADS=(1 2 4 7 8 16 20 40)
 SIZES=(20000 40000)
-REPEAT=3                   # число повторов; берём минимальное время
+REPEAT=10                   # число повторов; берём минимальное время
 
 echo "N,threads,time_seconds" > "$OUT"
 
